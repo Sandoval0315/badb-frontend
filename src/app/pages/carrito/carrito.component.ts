@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit, PLATFORM_ID, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CarritoService } from '../../core/service/carrito.service';
 import { AuthService } from '../../core/service/auth.service';
 import { CarritoItem } from '../../core/models/carrito.model';
+import { isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-carrito',
@@ -126,6 +127,8 @@ import { CarritoItem } from '../../core/models/carrito.model';
       background: var(--primary);
       color: var(--base);
       border-radius: 999px;
+      text-decoration: none;
+      display: inline-block;
     }
     .carrito-grid {
       display: grid;
@@ -192,6 +195,7 @@ import { CarritoItem } from '../../core/models/carrito.model';
       color: var(--muted);
       font-size: 0.75rem;
       transition: color 0.2s;
+      cursor: pointer;
     }
     .btn-eliminar:hover { color: #B91C1C; }
     .resumen {
@@ -243,6 +247,7 @@ import { CarritoItem } from '../../core/models/carrito.model';
       font-weight: 600;
       margin-bottom: 0.75rem;
       transition: opacity 0.2s;
+      cursor: pointer;
     }
     .btn-checkout:hover { opacity: 0.8; }
     .btn-vaciar {
@@ -254,6 +259,7 @@ import { CarritoItem } from '../../core/models/carrito.model';
       border-radius: 999px;
       font-size: 0.85rem;
       transition: all 0.2s;
+      cursor: pointer;
     }
     .btn-vaciar:hover { color: #B91C1C; border-color: #FECACA; }
   `]
@@ -262,9 +268,12 @@ export class CarritoComponent implements OnInit {
   items: CarritoItem[] = [];
   cargando = true;
 
+  private platformId = inject(PLATFORM_ID);
+
   constructor(
     private carritoService: CarritoService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   get total(): number {
@@ -272,17 +281,36 @@ export class CarritoComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      this.cargando = false;
+      this.cdr.detectChanges();
+      return;
+    }
     const usuario = this.authService.obtenerSesion();
-    if (!usuario) return;
+    if (!usuario) { 
+      this.cargando = false;
+      this.cdr.detectChanges();
+      return; 
+    }
     this.carritoService.obtener(usuario.id).subscribe({
-      next: (data) => { this.items = data; this.cargando = false; },
-      error: () => { this.cargando = false; }
+      next: (data) => { 
+        this.items = data; 
+        this.cargando = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { 
+        this.cargando = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
   eliminar(id: number): void {
     this.carritoService.eliminarItem(id).subscribe({
-      next: () => { this.items = this.items.filter(i => i.id !== id); }
+      next: () => { 
+        this.items = this.items.filter(i => i.id !== id);
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -290,7 +318,10 @@ export class CarritoComponent implements OnInit {
     const usuario = this.authService.obtenerSesion();
     if (!usuario) return;
     this.carritoService.vaciar(usuario.id).subscribe({
-      next: () => { this.items = []; }
+      next: () => { 
+        this.items = [];
+        this.cdr.detectChanges();
+      }
     });
   }
 }

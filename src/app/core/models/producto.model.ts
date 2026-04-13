@@ -7,4 +7,7 @@ export interface Producto {
   imagenUrl: string;
   categoriaId: number;
   categoriaNombre: string;
+  tallas?: string;
+  colores?: string;
+  genero?: string;
 }

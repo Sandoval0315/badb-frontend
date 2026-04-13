@@ -5,7 +5,6 @@ import { Producto } from '../models/producto.model';
 
 @Injectable({ providedIn: 'root' })
 export class ProductoService {
-
   private apiUrl = 'http://localhost:8080/api/productos';
 
   constructor(private http: HttpClient) {}

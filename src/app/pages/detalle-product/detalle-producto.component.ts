@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProductoService } from '../../core/service/producto.service';
@@ -225,30 +225,48 @@ export class DetalleProductoComponent implements OnInit {
     private router: Router,
     private productoService: ProductoService,
     private carritoService: CarritoService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.productoService.obtener(id).subscribe({
-      next: (data) => { this.producto = data; this.cargando = false; },
-      error: () => { this.cargando = false; }
+      next: (data) => { 
+        this.producto = data; 
+        this.cargando = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { 
+        this.cargando = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
-  volver(): void { this.router.navigate(['/home']); }
+  volver(): void { 
+    this.router.navigate(['/home']); 
+  }
 
   cambiarCantidad(delta: number): void {
     this.cantidad = Math.max(1, Math.min(this.cantidad + delta, this.producto?.stock ?? 1));
+    this.cdr.detectChanges();
   }
 
   agregarAlCarrito(): void {
     const usuario = this.authService.obtenerSesion();
-    if (!usuario) { this.router.navigate(['/login']); return; }
+    if (!usuario) { 
+      this.router.navigate(['/login']); 
+      return; 
+    }
     this.carritoService.agregar(usuario.id, this.producto!.id, this.cantidad).subscribe({
       next: () => {
         this.agregado = true;
-        setTimeout(() => this.agregado = false, 2500);
+        this.cdr.detectChanges();
+        setTimeout(() => {
+          this.agregado = false;
+          this.cdr.detectChanges();
+        }, 2500);
       }
     });
   }
